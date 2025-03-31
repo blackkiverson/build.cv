@@ -1,19 +1,62 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/Layout/Sidebar';
 import { ProfileHeader } from '@/components/Profile/ProfileHeader';
-import { dummyProfile } from '@/lib/dummyData';
+import { ProjectCard } from '@/components/Profile/ProjectCard';
+import { EditProfileOverlay } from '@/components/Profile/EditProfileOverlay';
+import { dummyProfile, dummyProjects } from '@/lib/dummyData';
 import { PenSquare } from 'lucide-react';
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const [isEditOverlayOpen, setIsEditOverlayOpen] = useState(false);
+  
   const handleEdit = () => {
-    // Will implement edit functionality
-    console.log('Edit clicked');
+    setIsEditOverlayOpen(true);
   };
 
   const handlePrint = () => {
-    // Will implement print functionality
-    console.log('Print clicked');
+    // Import dynamically to avoid SSR issues
+    import('@/utils/printUtils').then(({ printProfile }) => {
+      printProfile();
+    });
+  };
+
+  const handleSaveProfile = async (data: any) => {
+    try {
+      // Map the form data to match the expected API format
+      const apiData = {
+        name: data.displayName,
+        headline: data.jobTitle,
+        bio: data.bio,
+        status: data.status,
+        location: data.location,
+        website: data.website,
+        projects: data.projects
+      };
+
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+      
+      // In a real app, we would update the UI with the response data
+      console.log('Profile updated successfully');
+      
+      // Refresh the page to show updated data
+      router.refresh();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
   };
 
   return (
@@ -34,8 +77,8 @@ export default function ProfilePage() {
           <div className="mt-8 space-y-8">
             {/* Status section */}
             <div className="bg-gray-700/50 rounded-lg p-6">
-              <p className="text-gray-300">Currently searching for that first break through...</p>
-              <p className="text-gray-500 text-sm mt-2">2 months ago</p>
+              <p className="text-gray-300">{dummyProfile.status}</p>
+              <p className="text-gray-500 text-sm mt-2">{dummyProfile.statusDate}</p>
             </div>
 
             {/* About section */}
@@ -44,10 +87,25 @@ export default function ProfilePage() {
               <p className="text-gray-300">{dummyProfile.bio}</p>
             </div>
 
-            {/* Projects section placeholder */}
-            <div className="space-y-2">
+            {/* Projects section */}
+            <div className="space-y-4">
               <h2 className="text-gray-200 text-lg font-semibold">Projects</h2>
-              {/* Project items will go here */}
+              <div className="grid grid-cols-1 gap-6 mt-2">
+                {dummyProjects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    id={project.id}
+                    title={project.title}
+                    description={project.description}
+                    imageUrl={project.imageUrl}
+                    imageUrls={project.imageUrls}
+                    tags={project.tags}
+                    liveUrl={project.liveUrl}
+                    githubUrl={project.githubUrl}
+                    featured={project.featured}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -62,7 +120,14 @@ export default function ProfilePage() {
             <span>Edit profile</span>
           </button>
         </div>
+
+        {/* Edit Profile Overlay */}
+        <EditProfileOverlay 
+          isOpen={isEditOverlayOpen} 
+          onClose={() => setIsEditOverlayOpen(false)} 
+          onSave={handleSaveProfile}
+        />
       </div>
     </div>
   );
-} 
+}

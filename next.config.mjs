@@ -15,8 +15,12 @@ const nextConfig = {
         hostname: 'res.cloudinary.com',
         pathname: '/read-cv/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
   },
 };
 
-export default nextConfig; 
+export default nextConfig;
